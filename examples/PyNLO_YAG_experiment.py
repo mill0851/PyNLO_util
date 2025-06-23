@@ -26,7 +26,7 @@ TIME_STEPS = 2**13
 FIBER_LENGTH = 3.0      # (mm)
 KERR_COEFF = 6e-20
 ALPHA = 0.0             # attenuation const (dB/cm)
-GAMMA = 0.1 * ((KERR_COEFF * pyutil.wl_to_omega(CENTER_WL * 1e-9)) / (c * AREA)) * 1e3 # Effective Nonlinearity (1/(W km))
+GAMMA = ((KERR_COEFF * pyutil.wl_to_omega(CENTER_WL * 1e-9)) / (c * AREA)) * 1e3 # Effective Nonlinearity (1/(W km))
 print(GAMMA)
 print()
 RAMAN = True
