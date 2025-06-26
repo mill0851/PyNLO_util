@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 c = 299792458.0 # m/s
 
@@ -57,8 +58,8 @@ def propagation_const(omega, sellmeier_equation):
     Computes the propagation constant beta(omega) for some sellmeier_equation at some wavelength
 
     Args:
-        wl: center wavlength
-        sellmeier_equation: sellmeier equation centered at wl
+        omega: omega axis centered around the frequency of interest
+        sellmeier_equation: sellmeier equation centered at the frequency (wavelength) of interest
     returns:
         beta: returns the propagation cosntant as a function of angular freq
     """
@@ -75,7 +76,7 @@ def dispersion_coeff(beta0, omega):
 
     Args:
         beta0: an array containing propagation constant values (1/m)
-        omega: angular frequency axis (rad/s)
+        omega: angular frequency axis centered around the frequency of interest (rad/s)
     returns:
         beta2, beta3, beta4: returns dispersion coefficients of order 2,3,4
         (s^2/m)  (s^3/m)  (s^4/m)
@@ -101,3 +102,70 @@ def dispersion_coeff(beta0, omega):
 
     return beta2, beta3, beta4
 
+def fwhm(x, y, height = 0.5):
+    """
+    Gives the full-width at half-maximum of data in a numpy array pair.
+
+    :param x: The x-values (e.g. the scale of the vector; has the same units as the return value)
+    :type x: np.ndarray
+
+    :param y: The y-values (to which half-maximum refers)
+    :type y: np.ndarray
+
+    :param height: Instead of half-max, can optionally return height*max (e.g. default 0.5)
+    :type height: float
+
+    :return: The full-width at half-max (units of x)
+    :rtype: float
+    """
+    heightLevel = np.max(y) * height
+    indexMax = np.argmax(y)
+    y = np.roll(y, - indexMax + int(np.shape(y)[0]/2),axis=0)
+    indexMax = np.argmax(y)
+    xLower = np.interp(heightLevel, y[:indexMax], x[:indexMax])
+    xUpper = np.interp(heightLevel, np.flip(y[indexMax:]), np.flip(x[indexMax:]))
+    return xUpper - xLower
+
+def map_beam_radius(beam_waist, rayleigh_length, max_z, precision, verbose = True):
+    """
+    Calculates the beam waist of the described guassian beam for some extent of z. returns a list of these
+    values and has the option to plot the function.
+    
+    Args:
+        beam_waist: guassian beam waist, most narrow radius of beam (m)
+        rayleigh_length: desired rayleigh length of beam (m)
+        max_z: extent to which one wants their array created to (m)
+        precision: what spatial increment to compute the beam radius at, starts at 0 (m)
+        verbose: whether to graph the results or not
+
+    returns:
+        tuple: A tuple containing the z_axis used for computation as well as the beam radius values
+    
+    """
+    if (max_z < precision):
+        raise ValueError("Maximum Z value must be greater than the desired precision")
+    
+    z_axis = np.arange(0.0, max_z, precision)
+    beam_radius = np.sqrt( beam_waist**2 * (1 + (z_axis / rayleigh_length)**2) )
+
+    if verbose:
+        plt.figure(figsize=(10,5))
+        plt.plot(z_axis, beam_radius, label=r'Beam Radius')
+        plt.xlabel("Z Position (m)")
+        plt.ylabel("Beam Radius (m)")
+        plt.title(" Beam Radius vs Z ")
+        plt.grid()
+        if max_z > rayleigh_length:
+            plt.axvline(x=rayleigh_length, color='red', linestyle='--', label='$Z_{R}$')
+        plt.legend()
+        plt.show()
+
+    return (z_axis, beam_radius)
+
+def dB(num):
+    return 10*np.log10(np.abs(num)**2)
+
+def freq_to_wl(freq_THz):
+    """Convert frequency in THz to wavelength in um"""
+    c = 299792458  # Speed of light in m/s
+    return c / (freq_THz * 1e12) * 1e6  # Convert to m
